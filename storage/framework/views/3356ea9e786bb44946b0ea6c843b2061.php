@@ -1,42 +1,42 @@
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-            <thead class="bg-light table-light">
-                <tr class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 0.05em;">
-                    <th class="border-0 px-4 py-3">No</th>
-                    <th class="border-0 py-3">Display Name</th>
-                    <th class="border-0 py-3">Email Address</th>
-                    <th class="border-0 py-3">Order Allocation</th>
-                    <th class="border-0 py-3">Registration Date</th>
+            <thead class="table-light">
+                <tr class="text-uppercase text-muted fw-bold" style="font-size:.75rem; letter-spacing:.05em;">
+                    <th class="border-0 px-4 py-3">#</th>
+                    <th class="border-0 py-3">Name</th>
+                    <th class="border-0 py-3">Email</th>
+                    <th class="border-0 py-3">Orders</th>
+                    <th class="border-0 py-3">Joined</th>
                     <th class="border-0 text-end px-4 py-3">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php $__empty_1 = true; $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                    <tr class="border-bottom border-light-subtle">
-                        <td class="px-4 py-3 text-secondary fw-medium"><?php echo e($loop->iteration); ?></td>
+                    <tr>
+                        <td class="px-4 py-3 text-muted fw-medium"><?php echo e($loop->iteration); ?></td>
                         <td class="py-3">
-                            <div class="d-flex align-items-center gap-2.5">
-                                <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold text-center border border-light-subtle"
-                                     style="width: 38px; height: 38px; font-size: 0.85rem; flex-shrink: 0; letter-spacing: -0.02em;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                     style="width:38px; height:38px; font-size:.85rem; flex-shrink:0;">
                                     <?php echo e(strtoupper(substr($user->name, 0, 1))); ?>
 
                                 </div>
-                                <span class="fw-semibold text-dark"><?php echo e($user->name); ?></span>
+                                <span class="fw-semibold" style="color:var(--text);"><?php echo e($user->name); ?></span>
                             </div>
                         </td>
-                        <td class="py-3 text-secondary small"><?php echo e($user->email); ?></td>
+                        <td class="py-3 text-muted small"><?php echo e($user->email); ?></td>
                         <td class="py-3">
-                            <span class="badge bg-primary bg-opacity-10 text-primary px-2.5 py-1.5 rounded-pill fw-semibold" style="font-size: 0.75rem;">
-                                <?php echo e(number_format($user->orders_count)); ?> orders
+                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill fw-semibold px-3" style="font-size:.75rem;">
+                                <?php echo e(number_format($user->orders_count)); ?>
+
                             </span>
                         </td>
                         <td class="py-3 text-muted small"><?php echo e($user->created_at->format('M d, Y')); ?></td>
                         <td class="text-end px-4 py-3">
                             <div class="d-flex gap-1 justify-content-end">
-                                <button type="button" class="btn btn-sm btn-light border border-light-subtle rounded-3 text-dark px-2.5 py-1.5 fw-medium small d-flex align-items-center gap-1"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#showUserModal"
+                                <button type="button" class="btn btn-sm btn-light rounded-3 fw-medium px-3 d-flex align-items-center gap-1"
+                                        data-bs-toggle="modal" data-bs-target="#showUserModal"
                                         data-name="<?php echo e($user->name); ?>"
                                         data-email="<?php echo e($user->email); ?>"
                                         data-joined="<?php echo e($user->created_at->format('M d, Y')); ?>"
@@ -44,23 +44,22 @@
                                         data-total-spent="$<?php echo e(number_format($user->orders->sum('total_amount'), 2)); ?>"
                                         data-orders-json="<?php echo e(json_encode($user->orders->map(function($order) {
                                             return [
-                                                'id' => $order->id,
-                                                'items_count' => $order->items->count(),
+                                                'id'           => $order->id,
+                                                'items_count'  => $order->items->count(),
                                                 'total_amount' => number_format($order->total_amount, 2),
-                                                'status' => ucfirst($order->status),
-                                                'status_raw' => $order->status,
-                                                'date' => $order->created_at->format('M d, Y'),
-                                                'url' => route('admin.orders.show', $order->id)
+                                                'status'       => ucfirst($order->status),
+                                                'status_raw'   => $order->status,
+                                                'date'         => $order->created_at->format('M d, Y'),
+                                                'url'          => route('admin.orders.show', $order->id),
                                             ];
                                         }))); ?>">
                                     <i class="bi bi-eye"></i> View
                                 </button>
-
                                 <?php if(auth()->id() !== $user->id): ?>
                                     <form method="POST" action="<?php echo e(route('admin.users.destroy', $user)); ?>"
-                                          onsubmit="return confirm('Are you sure you want to permanently strip account parameters and records for this customer profile?')">
+                                          onsubmit="return confirm('Delete this user and all their data?')">
                                         <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
-                                        <button type="submit" class="btn btn-sm btn-light border border-light-subtle rounded-3 text-danger px-2.5 py-1.5">
+                                        <button type="submit" class="btn btn-sm btn-light rounded-3 text-danger px-3">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -70,13 +69,14 @@
                     </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-5">
-                            <div class="py-5">
-                                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center p-3 mb-3" style="width: 64px; height: 64px;">
-                                    <i class="bi bi-people text-secondary opacity-50 fs-3"></i>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="py-4">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center p-3 mb-3"
+                                     style="width:64px; height:64px; background:var(--surface-2);">
+                                    <i class="bi bi-people text-muted fs-3 opacity-50"></i>
                                 </div>
-                                <p class="mb-1 fw-bold text-dark">No consumer records located</p>
-                                <span class="text-muted small">Ecosystem database is empty or matches no active filters.</span>
+                                <p class="mb-1 fw-bold" style="color:var(--text);">No users found</p>
+                                <span class="text-muted small">Try adjusting your search.</span>
                             </div>
                         </td>
                     </tr>
@@ -85,10 +85,9 @@
         </table>
     </div>
 
-    
     <?php if($users->hasPages()): ?>
-        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center px-4 py-3">
-            <span class="text-muted small">Showing <strong><?php echo e($users->firstItem()); ?></strong> to <strong><?php echo e($users->lastItem()); ?></strong> of <strong><?php echo e($users->total()); ?></strong> customers</span>
+        <div class="card-footer d-flex justify-content-between align-items-center px-4 py-3">
+            <span class="text-muted small">Showing <strong><?php echo e($users->firstItem()); ?></strong>–<strong><?php echo e($users->lastItem()); ?></strong> of <strong><?php echo e($users->total()); ?></strong></span>
             <div class="pagination-clean"><?php echo e($users->links('pagination::bootstrap-5')); ?></div>
         </div>
     <?php endif; ?>
