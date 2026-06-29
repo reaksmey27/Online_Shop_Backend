@@ -33,8 +33,9 @@ class OrderController extends Controller
     public function checkout(Request $request)
     {
         $request->validate([
-            'shipping_address' => 'required|string',
-            'payment_method'   => 'required|string',
+            'shipping_address' => 'required|string|max:500',
+            'payment_method'   => 'required|string|in:cash,card,mobile,credit_card,debit_card,paypal,bank_transfer,cash_on_delivery',
+            'order_notes'      => 'nullable|string|max:500',
         ]);
 
         $cartItems = CartItem::with('product')
@@ -42,14 +43,19 @@ class OrderController extends Controller
             ->get();
 
         if ($cartItems->isEmpty()) {
-            return response()->json(['message' => 'Cart is empty'], 422);
+            return response()->json(['message' => 'Your cart is empty.'], 422);
         }
 
-        // Check stock for all items
+        // Validate stock for all items before touching the DB
         foreach ($cartItems as $item) {
+            if (! $item->product || ! $item->product->is_active) {
+                return response()->json([
+                    'message' => "Product \"{$item->product?->name}\" is no longer available.",
+                ], 422);
+            }
             if ($item->product->stock < $item->quantity) {
                 return response()->json([
-                    'message' => "Insufficient stock for: {$item->product->name}"
+                    'message' => "Insufficient stock for: {$item->product->name}",
                 ], 422);
             }
         }
@@ -57,7 +63,10 @@ class OrderController extends Controller
         $order = null;
 
         DB::transaction(function () use ($request, $cartItems, &$order) {
-            $total = $cartItems->sum(fn($i) => $i->product->price * $i->quantity);
+            $total = $cartItems->sum(fn ($i) => $i->product->price * $i->quantity);
+
+            // Cash on delivery stays unpaid until delivery; others mark paid
+            $paymentStatus = in_array($request->payment_method, ['cash', 'cash_on_delivery']) ? 'unpaid' : 'paid';
 
             $order = Order::create([
                 'user_id'          => $request->user()->id,
@@ -65,7 +74,8 @@ class OrderController extends Controller
                 'status'           => 'pending',
                 'shipping_address' => $request->shipping_address,
                 'payment_method'   => $request->payment_method,
-                'payment_status'   => 'unpaid',
+                'payment_status'   => $paymentStatus,
+                'order_notes'      => $request->order_notes,
             ]);
 
             foreach ($cartItems as $item) {
@@ -76,17 +86,48 @@ class OrderController extends Controller
                     'price'      => $item->product->price,
                 ]);
 
-                // Deduct stock
                 $item->product->decrement('stock', $item->quantity);
             }
 
-            // Clear cart
             CartItem::where('user_id', $request->user()->id)->delete();
         });
 
         return response()->json([
-            'message' => 'Order placed successfully',
+            'message' => 'Order placed successfully.',
             'order'   => $order?->load('items.product'),
         ], 201);
+    }
+
+    /**
+     * Customer can cancel their own pending order and restore stock.
+     */
+    public function cancel(Request $request, $id)
+    {
+        $order = Order::with('items.product')
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($id);
+
+        if ($order->status !== 'pending') {
+            return response()->json([
+                'message' => 'Only pending orders can be cancelled.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($order) {
+            // Restore stock
+            foreach ($order->items as $item) {
+                $item->product?->increment('stock', $item->quantity);
+            }
+
+            $order->update([
+                'status'         => 'cancelled',
+                'payment_status' => 'refunded',
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Order cancelled successfully.',
+            'order'   => $order->fresh('items.product'),
+        ]);
     }
 }

@@ -13,12 +13,13 @@ class CartController extends Controller
     {
         $items = CartItem::with('product.category')
             ->where('user_id', $request->user()->id)
-            ->get();
+            ->get()
+            ->filter(fn ($item) => $item->product !== null); // skip orphaned items
 
-        $total = $items->sum(fn($item) => $item->product->price * $item->quantity);
+        $total = $items->sum(fn ($item) => $item->product->price * $item->quantity);
 
         return response()->json([
-            'items' => $items,
+            'items' => $items->values(),
             'total' => $total,
         ]);
     }

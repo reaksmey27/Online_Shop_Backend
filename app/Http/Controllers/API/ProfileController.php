@@ -11,8 +11,8 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'name'  => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $request->user()->id,
+            'name'  => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:users,email,' . $request->user()->id,
         ]);
 
         $request->user()->update($request->only('name', 'email'));

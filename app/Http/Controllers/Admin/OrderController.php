@@ -17,8 +17,6 @@ class OrderController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Bug #3 fix: wrap OR conditions inside a closure to prevent
-        // the OR from leaking outside and breaking the status filter
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -44,9 +42,17 @@ class OrderController extends Controller
     public function update(Request $request, Order $order)
     {
         $request->validate([
-            'status'         => 'required|in:pending,processing,shipped,delivered,cancelled',
+            'status'         => 'required|in:pending,processing,shipped,delivered,completed,cancelled',
             'payment_status' => 'required|in:unpaid,paid,refunded',
         ]);
+
+        // Restore stock when cancelling a non-cancelled order
+        if ($request->status === 'cancelled' && $order->status !== 'cancelled') {
+            $order->load('items.product');
+            foreach ($order->items as $item) {
+                $item->product?->increment('stock', $item->quantity);
+            }
+        }
 
         $order->update([
             'status'         => $request->status,

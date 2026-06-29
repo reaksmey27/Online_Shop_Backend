@@ -10,28 +10,29 @@ use App\Http\Controllers\API\WishlistController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\ReviewController;
 use App\Http\Controllers\API\ProfileController;
+use App\Http\Controllers\API\StatsController;
 
 // ── PUBLIC ROUTES ─────────────────────────────────────────
 
-// Standard Auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 
-// Google OAuth
 Route::get('/auth/google/url',      [GoogleAuthController::class, 'redirectUrl']);
-Route::get('/auth/google/callback',  [GoogleAuthController::class, 'callback']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
-// Products & Categories (public browsing)
 Route::get('/categories',      [CategoryController::class, 'index']);
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
 
-Route::get('/products',        [ProductController::class, 'index']);
-Route::get('/products/search', [ProductController::class, 'search']);
-Route::get('/products/{id}',   [ProductController::class, 'show']);
+Route::get('/products',               [ProductController::class, 'index']);
+Route::get('/products/search',        [ProductController::class, 'search']);
+Route::get('/products/{id}',          [ProductController::class, 'show']);
+Route::get('/products/{id}/related',  [ProductController::class, 'related']);
 
 Route::get('/products/{productId}/reviews', [ReviewController::class, 'index']);
 
-// ── PRIVATE ROUTES (Sanctum token required) ───────────────
+Route::get('/stats', [StatsController::class, 'index']);
+
+// ── PRIVATE ROUTES ────────────────────────────────────────
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -55,12 +56,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/wishlist',        [WishlistController::class, 'add']);
     Route::delete('/wishlist/{id}', [WishlistController::class, 'remove']);
 
-    // Orders (checkout must be before {id})
-    Route::post('/orders/checkout', [OrderController::class, 'checkout']);
-    Route::get('/orders',           [OrderController::class, 'index']);
-    Route::get('/orders/{id}',      [OrderController::class, 'show']);
+    // Orders — checkout must be before {id}
+    Route::post('/orders/checkout',    [OrderController::class, 'checkout']);
+    Route::delete('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+    Route::get('/orders',              [OrderController::class, 'index']);
+    Route::get('/orders/{id}',         [OrderController::class, 'show']);
 
     // Reviews
-    Route::post('/reviews',        [ReviewController::class, 'store']);
-    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+    Route::post('/reviews',           [ReviewController::class, 'store']);
+    Route::put('/reviews/{id}',       [ReviewController::class, 'update']);
+    Route::delete('/reviews/{id}',    [ReviewController::class, 'destroy']);
 });

@@ -14,11 +14,25 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::with('category')
+            ->withAvg('reviews', 'rating')
             ->where('is_active', true);
 
         // Filter by category
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
+        }
+
+        // Price range filter
+        if ($request->filled('price_min')) {
+            $query->where('price', '>=', (float) $request->price_min);
+        }
+        if ($request->filled('price_max')) {
+            $query->where('price', '<=', (float) $request->price_max);
+        }
+
+        // In-stock filter
+        if ($request->boolean('in_stock')) {
+            $query->where('stock', '>', 0);
         }
 
         // Search by name or description
@@ -50,7 +64,8 @@ class ProductController extends Controller
             ->where('is_active', true)
             ->findOrFail($id);
 
-        // Use the model accessor instead of firing a raw query
+        // average_rating accessor uses the already-loaded reviews relation
+        // (no extra DB query needed — append triggers the model accessor)
         $product->append('average_rating');
 
         return response()->json($product);
@@ -63,6 +78,7 @@ class ProductController extends Controller
         $q = $request->q;
 
         $products = Product::with('category')
+            ->withAvg('reviews', 'rating')
             ->where('is_active', true)
             ->where(function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
@@ -72,5 +88,21 @@ class ProductController extends Controller
             ->get();
 
         return response()->json($products);
+    }
+
+    public function related(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $related = Product::with('category')
+            ->withAvg('reviews', 'rating')
+            ->where('is_active', true)
+            ->where('id', '!=', $id)
+            ->where('category_id', $product->category_id)
+            ->inRandomOrder()
+            ->limit(4)
+            ->get();
+
+        return response()->json($related);
     }
 }

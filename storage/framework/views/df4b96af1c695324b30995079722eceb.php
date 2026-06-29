@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="fw-bold mb-1" style="color:var(--text);">Dashboard</h4>
-            <p class="text-muted small mb-0">Welcome back! Here's what's happening with your store today.</p>
+            <p class="text-muted small mb-0">Welcome back! Here's what's happening with your store.</p>
         </div>
     </div>
 
@@ -25,6 +25,9 @@
                     <div>
                         <span class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size:.7rem; letter-spacing:.05em;">Total Orders</span>
                         <h3 class="fw-bold mb-0" style="color:var(--text);"><?php echo e(number_format($totalOrders ?? 0)); ?></h3>
+                        <?php if(($pendingOrders ?? 0) > 0): ?>
+                            <small class="text-warning fw-semibold"><?php echo e($pendingOrders); ?> pending</small>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -40,6 +43,7 @@
                     <div>
                         <span class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size:.7rem; letter-spacing:.05em;">Total Revenue</span>
                         <h3 class="fw-bold mb-0" style="color:var(--text);">$<?php echo e(number_format($totalRevenue ?? 0, 2)); ?></h3>
+                        <small class="text-muted">paid orders only</small>
                     </div>
                 </div>
             </div>
@@ -55,6 +59,9 @@
                     <div>
                         <span class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size:.7rem; letter-spacing:.05em;">Total Products</span>
                         <h3 class="fw-bold mb-0" style="color:var(--text);"><?php echo e(number_format($totalProducts ?? 0)); ?></h3>
+                        <?php if(($outOfStock ?? 0) > 0): ?>
+                            <small class="text-danger fw-semibold"><?php echo e($outOfStock); ?> out of stock</small>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -68,7 +75,7 @@
                         <i class="bi bi-people fs-5"></i>
                     </div>
                     <div>
-                        <span class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size:.7rem; letter-spacing:.05em;">Total Users</span>
+                        <span class="text-muted text-uppercase fw-semibold d-block mb-1" style="font-size:.7rem; letter-spacing:.05em;">Total Customers</span>
                         <h3 class="fw-bold mb-0" style="color:var(--text);"><?php echo e(number_format($totalUsers ?? 0)); ?></h3>
                     </div>
                 </div>
@@ -77,80 +84,139 @@
 
     </div>
 
-    
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-header border-0 pt-4 px-4 pb-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <h5 class="fw-bold mb-0" style="color:var(--text);">Recent Orders</h5>
-                    <small class="text-muted">Latest customer transactions.</small>
+    <div class="row g-4 mb-4">
+
+        
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                <div class="card-header border-0 pt-4 px-4 pb-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h5 class="fw-bold mb-0" style="color:var(--text);">Recent Orders</h5>
+                            <small class="text-muted">Latest 10 customer transactions</small>
+                        </div>
+                        <a href="<?php echo e(route('admin.orders.index')); ?>" class="btn btn-sm btn-light rounded-3 fw-medium px-3 small">
+                            View All
+                        </a>
+                    </div>
                 </div>
-                <span class="badge px-3 py-2 rounded-pill fw-medium small" style="background:var(--surface-3); color:var(--text); border:1px solid var(--border);">
-                    <span class="spinner-grow spinner-grow-sm text-success me-1" role="status" style="width:6px; height:6px;"></span>
-                    Live
-                </span>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr class="text-uppercase text-muted fw-bold" style="font-size:.7rem; letter-spacing:.05em;">
+                                    <th class="border-0 px-4 py-3">Order</th>
+                                    <th class="border-0 py-3">Customer</th>
+                                    <th class="border-0 py-3">Amount</th>
+                                    <th class="border-0 py-3">Status</th>
+                                    <th class="border-0 py-3">Date</th>
+                                    <th class="border-0 text-end px-4 py-3"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $__empty_1 = true; $__currentLoopData = $recentOrders ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                    <tr>
+                                        <td class="px-4 py-3 text-muted fw-medium">#<?php echo e($order->id); ?></td>
+                                        <td class="py-3 fw-semibold" style="color:var(--text);"><?php echo e($order->user->name); ?></td>
+                                        <td class="py-3 fw-bold" style="color:var(--text);">$<?php echo e(number_format($order->total_amount, 2)); ?></td>
+                                        <td class="py-3">
+                                            <?php
+                                                $badge = match($order->status) {
+                                                    'completed','delivered' => ['success', 'check-circle-fill', $order->status],
+                                                    'processing','shipped'  => ['primary', 'arrow-repeat',      $order->status],
+                                                    'cancelled'             => ['danger',  'x-circle-fill',     'cancelled'],
+                                                    default                 => ['warning', 'clock-history',     'pending'],
+                                                };
+                                            ?>
+                                            <span class="badge bg-<?php echo e($badge[0]); ?>-subtle rounded-pill fw-semibold px-3" style="font-size:.72rem;">
+                                                <i class="bi bi-<?php echo e($badge[1]); ?> me-1"></i> <?php echo e(ucfirst($badge[2])); ?>
+
+                                            </span>
+                                        </td>
+                                        <td class="py-3 text-muted small"><?php echo e($order->created_at->format('M d, Y')); ?></td>
+                                        <td class="text-end px-4 py-3">
+                                            <a href="<?php echo e(route('admin.orders.show', $order)); ?>" class="btn btn-sm btn-light rounded-3 fw-medium px-3">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <div class="py-4">
+                                                <i class="bi bi-inbox text-muted fs-3 opacity-50 d-block mb-2"></i>
+                                                <p class="mb-0 fw-bold text-muted">No orders yet</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr class="text-uppercase text-muted fw-bold" style="font-size:.75rem; letter-spacing:.05em;">
-                            <th class="border-0 px-4 py-3">Order ID</th>
-                            <th class="border-0 py-3">Customer</th>
-                            <th class="border-0 py-3">Amount</th>
-                            <th class="border-0 py-3">Status</th>
-                            <th class="border-0 py-3">Date</th>
-                            <th class="border-0 text-end px-4 py-3">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $__empty_1 = true; $__currentLoopData = $recentOrders ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                            <tr>
-                                <td class="px-4 py-3 text-muted fw-medium">#<?php echo e($order->id); ?></td>
-                                <td class="py-3 fw-semibold" style="color:var(--text);"><?php echo e($order->user->name); ?></td>
-                                <td class="py-3 fw-bold" style="color:var(--text);">$<?php echo e(number_format($order->total_amount, 2)); ?></td>
-                                <td class="py-3">
-                                    <?php if($order->status === 'completed'): ?>
-                                        <span class="badge bg-success-subtle rounded-pill fw-semibold px-3" style="font-size:.75rem;">
-                                            <i class="bi bi-check-circle-fill me-1"></i> Completed
-                                        </span>
-                                    <?php elseif($order->status === 'processing'): ?>
-                                        <span class="badge bg-primary-subtle rounded-pill fw-semibold px-3" style="font-size:.75rem;">
-                                            <i class="bi bi-arrow-repeat me-1"></i> Processing
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge bg-warning-subtle rounded-pill fw-semibold px-3" style="font-size:.75rem;">
-                                            <i class="bi bi-clock-history me-1"></i> Pending
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="py-3 text-muted small"><?php echo e($order->created_at->format('M d, Y')); ?></td>
-                                <td class="text-end px-4 py-3">
-                                    <a href="<?php echo e(route('admin.orders.show', $order)); ?>" class="btn btn-sm btn-light rounded-3 fw-medium px-3">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
+        
+        <div class="col-12 col-xl-4">
+            <div class="d-flex flex-column gap-4 h-100">
+
+                
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header border-0 pt-4 px-4 pb-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Low Stock</h6>
+                            <small class="text-muted">Products with ≤ 5 units</small>
+                        </div>
+                        <a href="<?php echo e(route('admin.products.index')); ?>" class="small text-primary fw-semibold">Manage</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <?php $__empty_1 = true; $__currentLoopData = $lowStockProducts ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <a href="<?php echo e(route('admin.products.index')); ?>?search=<?php echo e(urlencode($product->name)); ?>"
+                               class="d-flex align-items-center gap-3 px-4 py-2 border-bottom border-light text-decoration-none hover-bg-light"
+                               style="transition: background .15s;">
+                                <div class="flex-1 min-w-0">
+                                    <p class="mb-0 fw-semibold small text-truncate" style="color:var(--text); max-width:160px;"><?php echo e($product->name); ?></p>
+                                </div>
+                                <span class="badge <?php echo e($product->stock <= 2 ? 'bg-danger' : 'bg-warning text-dark'); ?> rounded-pill px-2">
+                                    <?php echo e($product->stock); ?> left
+                                </span>
+                            </a>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                            <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <div class="py-4">
-                                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center p-3 mb-3"
-                                             style="width:64px; height:64px; background:var(--surface-2);">
-                                            <i class="bi bi-inbox text-muted fs-3 opacity-50"></i>
-                                        </div>
-                                        <p class="mb-1 fw-bold" style="color:var(--text);">No recent orders</p>
-                                        <span class="text-muted small">Completed transactions will appear here.</span>
-                                    </div>
-                                </td>
-                            </tr>
+                            <p class="text-muted small text-center py-3 mb-0">All products well-stocked.</p>
                         <?php endif; ?>
-                    </tbody>
-                </table>
+                    </div>
+                </div>
+
+                
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header border-0 pt-4 px-4 pb-3">
+                        <h6 class="fw-bold mb-0" style="color:var(--text);"><i class="bi bi-trophy-fill text-warning me-1"></i> Best Sellers</h6>
+                        <small class="text-muted">By units sold</small>
+                    </div>
+                    <div class="card-body p-0">
+                        <?php $__empty_1 = true; $__currentLoopData = $bestSellers ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $idx => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <a href="<?php echo e($item->product ? route('admin.products.index') . '?search=' . urlencode($item->product->name) : '#'); ?>"
+                               class="d-flex align-items-center gap-3 px-4 py-2 border-bottom border-light text-decoration-none"
+                               style="transition: background .15s;">
+                                <span class="fw-black text-muted" style="font-size:.75rem; width:16px;"><?php echo e($idx + 1); ?></span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="mb-0 fw-semibold small text-truncate" style="color:var(--text); max-width:160px;"><?php echo e($item->product?->name ?? '—'); ?></p>
+                                    <small class="text-muted">$<?php echo e(number_format($item->product?->price ?? 0, 2)); ?></small>
+                                </div>
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 fw-semibold" style="font-size:.72rem;">
+                                    <?php echo e($item->total_sold); ?> sold
+                                </span>
+                            </a>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            <p class="text-muted small text-center py-3 mb-0">No sales yet.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
             </div>
         </div>
+
     </div>
 </div>
 <?php $__env->stopSection(); ?>
