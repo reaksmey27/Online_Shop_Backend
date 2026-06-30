@@ -94,7 +94,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <h5 class="fw-bold mb-0" style="color:var(--text);">Recent Orders</h5>
-                            <small class="text-muted">Latest 10 customer transactions</small>
+                            <small class="text-muted">Latest 6 customer transactions</small>
                         </div>
                         <a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-light rounded-3 fw-medium px-3 small">
                             View All
@@ -115,7 +115,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($recentOrders ?? [] as $order)
+                                @forelse(($recentOrders ?? collect())->take(6) as $order)
                                     <tr>
                                         <td class="px-4 py-3 text-muted fw-medium">#{{ $order->id }}</td>
                                         <td class="py-3 fw-semibold" style="color:var(--text);">{{ $order->user->name }}</td>
@@ -166,19 +166,21 @@
                     <div class="card-header border-0 pt-4 px-4 pb-3 d-flex align-items-center justify-content-between">
                         <div>
                             <h6 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Low Stock</h6>
-                            <small class="text-muted">Products with ≤ 5 units</small>
+                            <small class="text-muted">Products with ≤ 10 units</small>
                         </div>
-                        <a href="{{ route('admin.products.index') }}" class="small text-primary fw-semibold">Manage</a>
+                        @if(($lowStockProducts ?? collect())->count() > 3)
+                            <a href="{{ route('admin.products.index', ['low_stock' => 1]) }}" class="small text-primary fw-semibold">View All</a>
+                        @endif
                     </div>
                     <div class="card-body p-0">
-                        @forelse($lowStockProducts ?? [] as $product)
+                        @forelse(($lowStockProducts ?? collect())->take(3) as $product)
                             <a href="{{ route('admin.products.index') }}?search={{ urlencode($product->name) }}"
                                class="d-flex align-items-center gap-3 px-4 py-2 border-bottom border-light text-decoration-none hover-bg-light"
                                style="transition: background .15s;">
                                 <div class="flex-1 min-w-0">
                                     <p class="mb-0 fw-semibold small text-truncate" style="color:var(--text); max-width:160px;">{{ $product->name }}</p>
                                 </div>
-                                <span class="badge {{ $product->stock <= 2 ? 'bg-danger' : 'bg-warning text-dark' }} rounded-pill px-2">
+                                <span class="badge {{ $product->stock <= 3 ? 'bg-danger' : 'bg-warning text-dark' }} rounded-pill px-2">
                                     {{ $product->stock }} left
                                 </span>
                             </a>
@@ -192,10 +194,10 @@
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-header border-0 pt-4 px-4 pb-3">
                         <h6 class="fw-bold mb-0" style="color:var(--text);"><i class="bi bi-trophy-fill text-warning me-1"></i> Best Sellers</h6>
-                        <small class="text-muted">By units sold</small>
+                        <small class="text-muted">Top 6 by units sold</small>
                     </div>
                     <div class="card-body p-0">
-                        @forelse($bestSellers ?? [] as $idx => $item)
+                        @forelse(($bestSellers ?? collect())->take(6) as $idx => $item)
                             <a href="{{ $item->product ? route('admin.products.index') . '?search=' . urlencode($item->product->name) : '#' }}"
                                class="d-flex align-items-center gap-3 px-4 py-2 border-bottom border-light text-decoration-none"
                                style="transition: background .15s;">

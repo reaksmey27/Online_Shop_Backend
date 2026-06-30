@@ -10,11 +10,26 @@ use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::withCount('products')
-            ->latest()
-            ->paginate(10);
+        $query = Category::withCount('products')->latest();
+
+        // Search
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active');
+        }
+
+        // Sort by product count
+        if ($request->filled('products_sort')) {
+            $query->reorder()->orderBy('products_count', $request->products_sort);
+        }
+
+        $categories = $query->paginate(10)->withQueryString();
 
         return view('admin.categories.index', compact('categories'));
     }

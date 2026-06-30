@@ -16,6 +16,8 @@
         </button>
     </div>
 
+    @include('admin.categories.partials.filter')
+
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">

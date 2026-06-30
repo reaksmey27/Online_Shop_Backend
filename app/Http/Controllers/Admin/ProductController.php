@@ -25,8 +25,26 @@ class ProductController extends Controller
         $query->where('category_id', $request->category_id);
     }
 
+    // Filter by status
+    if ($request->filled('status')) {
+        $query->where('is_active', $request->status === 'active');
+    }
+
+    // Filter by price range
+    if ($request->filled('price_min')) {
+        $query->where('price', '>=', $request->price_min);
+    }
+    if ($request->filled('price_max')) {
+        $query->where('price', '<=', $request->price_max);
+    }
+
+    // Filter by low stock (≤ 5 units)
+    if ($request->boolean('low_stock')) {
+        $query->where('stock', '<=', 10);
+    }
+
     $products   = $query->paginate(10)->withQueryString();
-    $categories = Category::where('is_active', true)->get(); // ← this was missing
+    $categories = Category::where('is_active', true)->get();
 
     return view('admin.products.index', compact('products', 'categories'));
 }
